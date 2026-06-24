@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Responsibility {
+  member
+  responsible
+}
+
+model curriculum_committee {
+  committee_id   Int            @id @default(autoincrement())
+  course_id      Int
+  teacher_id     Int
+  committee_role String         @db.VarChar(100)
+  responsibility Responsibility @default(member)
+  appointed_date DateTime?      @db.Date
+  end_date       DateTime?      @db.Date
+  is_active      Boolean?       @default(true)
+  created_at     DateTime?      @default(now()) @db.Timestamp(6)
+
+  tb_curriculum tb_curriculum @relation(fields: [course_id], references: [curriculum_id], onDelete: Cascade, onUpdate: NoAction)
+  teachers      teachers      @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([course_id, teacher_id])
+}
+
+model departments {
+  id                 Int       @id @default(autoincrement())
+  faculty_id         Int
+  department_name_th String    @db.VarChar(255)
+  department_name_en String?   @db.VarChar(255)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+
+  tb_curriculum tb_curriculum[]
+  faculties     faculties       @relation(fields: [faculty_id], references: [id], onDelete: Cascade)
+}
+
+model faculties {
+  id              Int           @id @default(autoincrement())
+  faculty_name_th String        @db.VarChar(255)
+  faculty_name_en String?       @db.VarChar(255)
+  created_at      DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?     @default(now()) @db.Timestamp(6)
+  departments     departments[]
+}
+
+model roles {
+  role_id     Int     @id @default(autoincrement())
+  role_name   String  @db.VarChar(100)
+  description String? @db.VarChar(255)
+  users       users[]
+}
+
+enum EducationLevel {
+  bachelor
+  master
+  doctoral
+}
+
+model teacher_education {
+  id              Int            @id @default(autoincrement())
+  teacher_id      Int
+  degree_level    EducationLevel
+  degree_name     String?        @db.VarChar(200)
+  major           String?        @db.VarChar(200)
+  faculty_name    String?        @db.VarChar(255)
+  university_name String         @db.VarChar(255)
+  country         String?        @db.VarChar(100)
+  graduation_year Int?
+  created_at      DateTime       @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?      @updatedAt @db.Timestamp(6)
+
+  teachers teachers @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade)
+
+  @@unique([teacher_id, degree_level])
+}
+
+enum CurriculumStatus {
+  new
+  revised
+}
+
+enum CurriculumFormat {
+  bachelor_4_year
+  bachelor_5_year
+  bachelor_continuing
+  master
+  doctoral
+  other
+}
+
+enum CurriculumCategory {
+  academic
+  advanced_academic
+  professional
+  advanced_professional
+  other
+}
+
+enum TeachingLanguage {
+  thai
+  english
+  thai_english
+  other
+}
+
+enum AdmissionType {
+  thai_only
+  foreign_only
+  thai_and_foreign_thai_language
+  thai_and_foreign
+}
+
+enum CooperationType {
+  internal
+  collaborative
+}
+
+enum DegreeAwardType {
+  single
+  multiple
+}
+
+model tb_curriculum {
+  curriculum_id      Int     @id @default(autoincrement())
+  curriculum_code    String  @unique @db.VarChar(50)
+  curriculum_name_th String  @unique @db.VarChar(255)
+  curriculum_name_en String? @db.VarChar(255)
+
+  degree_name_th String  @db.VarChar(100)
+  degree_name_en String? @db.VarChar(100)
+
+  degree_abbr_th String? @db.VarChar(20)
+  degree_abbr_en String? @db.VarChar(20)
+
+  education_level   EducationLevel
+  curriculum_status CurriculumStatus @default(new)
+
+  total_credits   Int
+  curriculum_year Int
+  revision_round  Int       @default(1)
+  major_name      String?   @db.VarChar(255)
+  effective_date  DateTime? @db.Date
+  end_year        Int?
+  close_date      DateTime? @db.Date
+  program_flag    String?   @db.VarChar(50)
+  department_id   Int
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @db.Timestamp(6)
+
+  curriculum_format         CurriculumFormat?
+  curriculum_format_other   String?
+  curriculum_category       CurriculumCategory?
+  curriculum_category_other String?
+  teaching_language         TeachingLanguage?
+  teaching_language_other   String?
+  admission_type            AdmissionType?
+  cooperation_type          CooperationType?
+  cooperation_name          String?             @db.VarChar(255)
+  degree_award_type         DegreeAwardType?
+  degree_award_detail       String?
+  start_term                Int?
+  start_academic_year       Int?
+  old_curriculum_name       String?             @db.VarChar(255)
+  meeting_round             String?             @db.VarChar(50)
+  old_curriculum_year       Int?
+
+  departments              departments                @relation(fields: [department_id], references: [id])
+  curriculum_committee     curriculum_committee[]
+  curriculumCertifications curriculum_certification[]
+  smo08                    smo08[]
+  curriculumProcesses      curriculum_process[]
+  curriculumOheTrackings   curriculum_ohe_tracking[]
+  curriculumApprovals      curriculum_approval[]
+}
+
+model teachers {
+  teacher_id              Int       @id @default(autoincrement())
+  user_id                 Int?      @unique
+  employee_code           String    @db.VarChar(50)
+  title_name              String    @db.VarChar(50)
+  first_name_th           String    @db.VarChar(100)
+  last_name_th            String    @db.VarChar(100)
+  first_name_en           String?   @db.VarChar(100)
+  last_name_en            String?   @db.VarChar(100)
+  academic_position       String?   @db.VarChar(100)
+  administrative_position String?   @db.VarChar(100)
+  highest_degree          String?   @db.VarChar(30)
+  major_degree            String?   @db.VarChar(100)
+  university_graduated    String?   @db.VarChar(100)
+  country_graduate        String?   @db.VarChar(100)
+  email                   String?   @db.VarChar(120)
+  phone                   String?   @db.VarChar(10)
+  employment_type         String?   @db.VarChar(30)
+  employment_status       String?   @db.VarChar(50)
+  hire_date               DateTime? @db.Date
+  retire_date             DateTime? @db.Date
+  is_active               Boolean?  @default(true)
+  department_id           Int?
+  remark                  String?
+  profile_image           String?   @db.VarChar(255)
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+
+  curriculum_committee curriculum_committee[]
+  academic_committee   academic_committee[]
+  teacher_education    teacher_education[]
+  users                users?                 @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+}
+
+model users {
+  id                   Int       @id @default(autoincrement())
+  username             String    @unique @db.VarChar(100)
+  password_hash        String    @db.VarChar(255)
+  title                String    @db.VarChar(10)
+  first_name           String    @db.VarChar(100)
+  last_name            String    @db.VarChar(100)
+  email                String    @unique @db.VarChar(150)
+  phone                String?   @db.VarChar(15)
+  status               String    @default("active") @db.VarChar(50)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @default(now()) @db.Timestamp(6)
+  role_id              Int
+  must_change_password Boolean   @default(false)
+
+  teachers               teachers?
+  roles                  roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  curriculumOheTrackings curriculum_ohe_tracking[]
+}
+
+// ══════════════════════════════════════════════════
+// curriculum_certification (อัปเดต field ใหม่)
+// ══════════════════════════════════════════════════
+model curriculum_certification {
+  certification_id Int @id @default(autoincrement())
+  curriculum_id    Int
+
+  certification_type String @db.VarChar(100) // เปลี่ยนจาก enum → String
+  agency             String @db.VarChar(255)
+
+  doc_number    String?   @db.VarChar(100) // เลขที่หนังสือรับรอง ✅
+  issue_date    DateTime? @db.Date // วันที่ออกหนังสือ   ✅
+  received_date DateTime? @db.Date // วันที่ได้รับเอกสาร ✅
+
+  request_date DateTime? @db.Date // เก็บไว้เผื่อใช้
+  approve_date DateTime? @db.Date // เก็บไว้เผื่อใช้
+
+  file_path  String?             @db.VarChar(255)
+  note       String?
+  status     CertificationStatus @default(pending)
+  created_at DateTime            @default(now()) @db.Timestamp(6)
+  updated_at DateTime?           @updatedAt @db.Timestamp(6)
+
+  tb_curriculum tb_curriculum @relation(fields: [curriculum_id], references: [curriculum_id], onDelete: Cascade)
+}
+
+// หมายเหตุ: ลบ enum CertificationType (OCSC/OTEPC) ออกแล้ว
+// เพราะ certification_type เปลี่ยนเป็น String อิสระ
+
+enum CertificationStatus {
+  pending
+  approved
+  rejected
+}
+
+model smo08 {
+  smo08_id      Int       @id @default(autoincrement())
+  curriculum_id Int
+  faculty       String    @db.VarChar(255)
+  major         String    @db.VarChar(255)
+  improve_round String    @db.VarChar(50)
+  year          String    @db.VarChar(10)
+  approve_date  DateTime? @db.Date
+  start_term    String?   @db.VarChar(50)
+  start_year    String?   @db.VarChar(10)
+
+  reason        String?
+  old_structure String?
+  new_structure String?
+  file_path     String?   @db.VarChar(255)
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @updatedAt @db.Timestamp(6)
+
+  tb_curriculum tb_curriculum @relation(fields: [curriculum_id], references: [curriculum_id], onDelete: Cascade)
+}
+
+model academic_committee {
+  id             Int       @id @default(autoincrement())
+  teacher_id     Int
+  role           String    @db.VarChar(100)
+  duty           String?
+  appointed_date DateTime? @db.Date
+  end_date       DateTime? @db.Date
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @updatedAt @db.Timestamp(6)
+
+  teachers teachers @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade)
+}
+
+model curriculum_process {
+  process_id    Int           @id @default(autoincrement())
+  curriculum_id Int
+  step_order    Int
+  step_name     String
+  status        ProcessStatus @default(pending)
+  process_date  DateTime?
+  note          String?
+  created_at    DateTime      @default(now())
+  file_path     String?       @db.VarChar(255)
+  file_name     String?       @db.VarChar(255)
+
+  tb_curriculum tb_curriculum @relation(fields: [curriculum_id], references: [curriculum_id], onDelete: Cascade)
+}
+
+enum ProcessStatus {
+  pending
+  current
+  done
+  rejected
+  resubmitted
+}
+
+model degree_types {
+  id              Int            @id @default(autoincrement())
+  education_level EducationLevel
+  name_th         String         @db.VarChar(200)
+  name_en         String?        @db.VarChar(200)
+  abbr_th         String?        @db.VarChar(20)
+  abbr_en         String?        @db.VarChar(20)
+  is_active       Boolean        @default(true)
+  sort_order      Int            @default(0)
+  created_at      DateTime       @default(now())
+}
+
+model curriculum_ohe_tracking {
+  tracking_id    Int       @id @default(autoincrement())
+  curriculum_id  Int
+  ohe_status     String    @db.VarChar(20)
+  submitted_date DateTime? @db.Date
+  note           String?
+  created_by     Int?
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @updatedAt @db.Timestamp(6)
+
+  tb_curriculum tb_curriculum @relation(fields: [curriculum_id], references: [curriculum_id], onDelete: Cascade)
+  users         users?        @relation(fields: [created_by], references: [id], onDelete: SetNull)
+}
+
+enum ApprovalType {
+  faculty_committee
+  curriculum_committee
+  academic_council
+  university_council
+  professional_council
+}
+
+enum MeetingResult {
+  approved
+  revision
+  rejected
+}
+
+model curriculum_approval {
+  approval_id    Int            @id @default(autoincrement())
+  curriculum_id  Int
+  approval_type  ApprovalType
+  meeting_no     String?        @db.VarChar(50)
+  approval_date  DateTime?      @db.Date
+  approval_month Int?
+  approval_year  Int?
+  result         MeetingResult?
+  note           String?
+  created_at     DateTime       @default(now())
+
+  tb_curriculum tb_curriculum @relation(fields: [curriculum_id], references: [curriculum_id], onDelete: Cascade)
+}
