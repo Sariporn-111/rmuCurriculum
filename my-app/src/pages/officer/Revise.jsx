@@ -391,125 +391,33 @@ const Revise = () => {
 
 
     // แสดงเฉพาะหลักสูตรปรับปรุง (ไม่จำกัดว่าต้องเผยแพร่แล้ว)
+    // ✅ แก้เป็น curriculum_status
     const revisedCurriculums = curriculums.filter(
-        c => c.program_type === "revised"
+        c => c.curriculum_status === "revised"
     );
 
 
     const handleSave = async (form) => {
-
         try {
-
             const formData = new FormData();
-
-            formData.append(
-                "curriculum_id",
-                form.curriculum_id
-            );
-
-            // formData.append(
-            //     "faculty",
-            //     form.faculty
-            // );
-
-            // formData.append(
-            //     "major",
-            //     form.major
-            // );
-
-            formData.append(
-                "improve_round",
-                form.improveRound
-            );
-
-            formData.append(
-                "year",
-                form.year
-            );
-
-            formData.append(
-                "approve_date",
-                form.approveDate || ""
-            );
-
-            formData.append(
-                "start_term",
-                form.startTerm || ""
-            );
-
-            formData.append(
-                "start_year",
-                form.startYear || ""
-            );
-
-            formData.append(
-                "reason",
-                form.reason || ""
-            );
-
-            formData.append(
-                "old_structure",
-                form.oldStructure || ""
-            );
-
-            formData.append(
-                "new_structure",
-                form.newStructure || ""
-            );
-
-            if (
-                form.file &&
-                form.file instanceof File
-            ) {
-                formData.append(
-                    "file",
-                    form.file
-                );
-            }
+            formData.append("curriculum_id", form.curriculum_id);
+            if (form.note) formData.append("note", form.note);
+            if (form.file instanceof File) formData.append("file", form.file);
 
             if (editData) {
-
-                await api.put(
-                    `/smo08/${editData.smo08_id}`,
-                    formData
-                );
-
-                Swal.fire(
-                    "สำเร็จ",
-                    "แก้ไขข้อมูลแล้ว",
-                    "success"
-                );
-
+                await api.put(`/smo08/${editData.smo08_id}`, formData);
+                Swal.fire("สำเร็จ", "แก้ไขข้อมูลแล้ว", "success");
             } else {
-
-                await api.post(
-                    "/smo08",
-                    formData
-                );
-
-                Swal.fire(
-                    "สำเร็จ",
-                    "เพิ่มข้อมูลแล้ว",
-                    "success"
-                );
+                await api.post("/smo08", formData);
+                Swal.fire("สำเร็จ", "เพิ่มข้อมูลแล้ว", "success");
             }
-
             fetchData();
-
             setOpenModal(false);
             setEditData(null);
-
         } catch (err) {
-
-            Swal.fire(
-                "ผิดพลาด",
-                err.response?.data?.error ||
-                "เกิดข้อผิดพลาด",
-                "error"
-            );
+            Swal.fire("ผิดพลาด", err.response?.data?.error || "เกิดข้อผิดพลาด", "error");
         }
     };
-
 
     const handleDelete = async (id) => {
 
