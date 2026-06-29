@@ -33,10 +33,10 @@ const Certification = () => {
         setLoading(true);
         try {
             const res = await api.get("/certifications");
-            console.log("✅ certifications response:", res.data);
+            // console.log("✅ certifications response:", res.data);
             setData(res.data.data || []);
         } catch (err) {
-            console.error("❌ fetchData error:", err);
+            console.error("fetchData error:", err);
         } finally {
             setLoading(false);
         }
@@ -51,21 +51,27 @@ const Certification = () => {
         }
     };
 
-    const publishedCurriculums = curriculums.filter((c) =>
-        c.curriculumProcesses?.some(
+    // ✅ วิธีที่ง่ายกว่า
+    const publishedCurriculums = curriculums.filter((c) => {
+        // ถ้ากำลัง edit → รวม curriculum ที่ผูกอยู่เสมอ
+        if (editData && c.curriculum_id === editData.curriculum_id) return true;
+        return c.curriculumProcesses?.some(
             (p) => p.step_name === "เผยแพร่หลักสูตร" && p.status === "done"
-        )
-    );
-
+        );
+    });
     const handleSave = async (form) => {
         try {
             const fd = new FormData();
             fd.append("curriculum_id", form.curriculum_id);
             fd.append("certification_type", form.certification_type);
             fd.append("agency", form.agency);
+            fd.append("recipient", form.recipient || "");
             fd.append("doc_number", form.doc_number || "");
             fd.append("issue_date", form.issue_date || "");
             fd.append("received_date", form.received_date || "");
+            fd.append("received_time", form.received_time || "");
+            fd.append("request_date", form.request_date || "");
+            fd.append("approve_date", form.approve_date || "");
             fd.append("note", form.note || "");
             if (form.file) fd.append("file", form.file);
 
@@ -84,7 +90,6 @@ const Certification = () => {
             Swal.fire("ผิดพลาด", err.response?.data?.error || "เกิดข้อผิดพลาด", "error");
         }
     };
-
     const handleDelete = async (id) => {
         const result = await Swal.fire({
             title: "ยืนยันการลบ",

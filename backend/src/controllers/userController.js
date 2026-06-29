@@ -91,6 +91,11 @@ export const createUser = async ({ body, set }) => {
         const existUsername = await prisma.users.findFirst({ where: { username: body.username } })
         if (existUsername) { set.status = 400; return { error: 'ชื่อผู้ใช้นี้มีในระบบแล้ว' } }
 
+        if (!body.password || body.password.length < 8) {
+            set.status = 400
+            return { error: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' }
+        }
+
         const hashedPassword = await bcrypt.hash(body.password, 10)
 
         const newUser = await prisma.users.create({
@@ -186,17 +191,46 @@ export const updateUser = async ({ params, body, set }) => {
             }
         })
 
-        await prisma.teachers.updateMany({
-            where: { user_id: updatedUser.id },
-            data: {
-                title_name: body.title,
-                first_name_th: body.first_name,
-                last_name_th: body.last_name,
-                email: body.email,
-                phone: body.phone ?? null,
-                updated_at: new Date()
+        if (Number(body.role_id) === TEACHER_ROLE_ID) {
+            const teacher = await prisma.teachers.findFirst({
+                where: { user_id: updatedUser.id }
+            });
+            if (teacher) {
+                await prisma.teachers.update({
+                    where: { teacher_id: teacher.teacher_id },
+                    data: {
+                        title_name: body.title,
+                        first_name_th: body.first_name,
+                        last_name_th: body.last_name,
+                        email: body.email,
+                        phone: body.phone ?? null,
+                        department_id: body.department_id ? Number(body.department_id) : null,
+                        updated_at: new Date()
+                    }
+                });
+            } else {
+                await prisma.teachers.create({
+                    data: {
+                        user_id: updatedUser.id,
+                        employee_code: `EMP${updatedUser.id}`,
+                        title_name: body.title,
+                        first_name_th: body.first_name,
+                        last_name_th: body.last_name,
+                        email: body.email,
+                        phone: body.phone ?? null,
+                        department_id: body.department_id ? Number(body.department_id) : null,
+                    }
+                });
             }
-        })
+        } else {
+            await prisma.teachers.updateMany({
+                where: { user_id: updatedUser.id },
+                data: {
+                    user_id: null,
+                    updated_at: new Date()
+                }
+            });
+        }
 
         return updatedUser
     } catch (err) {
@@ -222,13 +256,13 @@ export const deleteUser = async ({ params, store, set }) => {
 
 export const resetPassword = async ({ params, set }) => {
     try {
-        const defaultPassword = 'RMU@1234'
-        const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+        const randomPassword = String(Math.floor(10000000 + Math.random() * 90000000))
+        const hashedPassword = await bcrypt.hash(randomPassword, 10)
         await prisma.users.update({
             where: { id: Number(params.id) },
             data: { password_hash: hashedPassword }
         })
-        return { message: 'รีเซ็ตรหัสผ่านสำเร็จ' }
+        return { message: 'รีเซ็ตรหัสผ่านสำเร็จ', newPassword: randomPassword }
     } catch (err) {
         set.status = 500
         return { error: err.message }

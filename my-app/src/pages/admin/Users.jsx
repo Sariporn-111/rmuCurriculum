@@ -189,8 +189,7 @@ export const Users = () => {
         <p>ต้องการรีเซ็ตรหัสผ่านของ</p>
         <b>${u.first_name} ${u.last_name}</b>
         <br/><br/>
-        <p>รหัสผ่านใหม่จะเป็น:</p>
-        <b style="color:#2563eb">RMU@1234</b>
+        <p className="text-sm text-gray-500">ระบบจะทำการสุ่มรหัสผ่านใหม่ให้โดยอัตโนมัติ</p>
       `,
       icon: "question", showCancelButton: true,
       confirmButtonText: "รีเซ็ต", cancelButtonText: "ยกเลิก",
@@ -198,10 +197,16 @@ export const Users = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await api.post(`/users/${u.id}/reset-password`);
+      const res = await api.post(`/users/${u.id}/reset-password`);
+      const newPassword = res.data.newPassword;
       Swal.fire({
-        icon: "success", title: "รีเซ็ตรหัสผ่านสำเร็จ",
-        html: `<p>รหัสผ่านใหม่คือ</p><b style="color:#2563eb">RMU@1234</b>`,
+        icon: "success",
+        title: "รีเซ็ตรหัสผ่านสำเร็จ",
+        html: `
+          <p>รหัสผ่านใหม่คือ:</p>
+          <b style="color:#2563eb; font-size: 24px; letter-spacing: 2px;">${newPassword}</b>
+          <p className="mt-2 text-xs text-gray-400">กรุณาคัดลอกรหัสผ่านนี้ส่งให้ผู้ใช้งาน</p>
+        `,
       });
     } catch {
       Swal.fire("ผิดพลาด", "ไม่สามารถรีเซ็ตรหัสผ่านได้", "error");

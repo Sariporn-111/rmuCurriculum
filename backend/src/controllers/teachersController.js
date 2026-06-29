@@ -162,7 +162,15 @@ export const getMyProfile = async ({ store, set }) => {
             })
         }
 
-        return { data: teacher }
+        let department = null;
+        if (teacher.department_id) {
+            department = await prisma.departments.findUnique({
+                where: { id: teacher.department_id },
+                include: { faculties: true }
+            });
+        }
+
+        return { data: { ...teacher, department } }
     } catch (err) {
         set.status = 500
         return { error: err.message }

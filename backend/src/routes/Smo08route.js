@@ -26,6 +26,8 @@ export const smo08Route = new Elysia({ prefix: "/smo08" })
         beforeHandle: [isAuth, allowRoles(["officer"])],
         body: t.Object({
             curriculum_id: t.String(),
+            improve_round: t.Optional(t.String()),
+            year: t.Optional(t.String()),
             note: t.Optional(t.String()),
             file: t.Optional(t.File()),
         }),
@@ -35,6 +37,8 @@ export const smo08Route = new Elysia({ prefix: "/smo08" })
         beforeHandle: [isAuth, allowRoles(["officer"])],
         body: t.Object({
             curriculum_id: t.String(),
+            improve_round: t.Optional(t.String()),
+            year: t.Optional(t.String()),
             note: t.Optional(t.String()),
             file: t.Optional(t.File()),
         }),

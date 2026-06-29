@@ -91,6 +91,11 @@ export const register = async ({ body, set }) => {
             return { error: 'อีเมลนี้มีอยู่แล้ว' }
         }
 
+        if (!password || password.length < 8) {
+            set.status = 400
+            return { error: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' }
+        }
+
         const hashed = await bcrypt.hash(password, 10)
 
         // สร้าง user ด้วย role_id = 3 (teacher)
@@ -206,6 +211,11 @@ export const changePassword = async ({ store, body, set }) => {
 
         const isMatch = await bcrypt.compare(body.current_password, result.rows[0].password_hash);
         if (!isMatch) { set.status = 400; return { error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' }; }
+
+        if (!body.new_password || body.new_password.length < 8) {
+            set.status = 400;
+            return { error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร' };
+        }
 
         const hashed = await bcrypt.hash(body.new_password, 10);
         await pool.query(

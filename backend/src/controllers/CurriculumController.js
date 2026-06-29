@@ -15,8 +15,14 @@ export const getCourses = async ({ query, set, store }) => {
             const teacher = await prisma.teachers.findFirst({
                 where: { user_id: user.id }
             });
-            if (teacher?.department_id) {
-                whereClause.department_id = teacher.department_id;
+            if (teacher) {
+                whereClause.curriculum_committee = {
+                    some: {
+                        teacher_id: teacher.teacher_id
+                    }
+                };
+            } else {
+                whereClause.curriculum_id = -1;
             }
         }
 

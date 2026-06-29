@@ -7,13 +7,38 @@ const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR);
 
 // ─── ดึงรายการทั้งหมด ─────────────────────────────────────────────────────────
-export const getSmo08List = async ({ query }) => {
+export const getSmo08List = async ({ query, store }) => {
     try {
         const { search, faculty } = query || {};
+        const user = store?.user;
+        const role = user?.roles?.role_name;
+
+        let curriculumFilter = {};
+        if (role === "teacher") {
+            const teacher = await prisma.teachers.findFirst({
+                where: { user_id: user.id }
+            });
+            if (teacher) {
+                curriculumFilter = {
+                    tb_curriculum: {
+                        curriculum_committee: {
+                            some: {
+                                teacher_id: teacher.teacher_id
+                            }
+                        }
+                    }
+                };
+            } else {
+                curriculumFilter = {
+                    curriculum_id: -1
+                };
+            }
+        }
 
         const result = await prisma.smo08.findMany({
             where: {
                 AND: [
+                    curriculumFilter,
                     search ? {
                         tb_curriculum: {
                             curriculum_name_th: { contains: search, mode: "insensitive" }
@@ -90,9 +115,8 @@ export const createSmo08 = async ({ body, set }) => {
                 curriculum_id: Number(body.curriculum_id),
                 faculty: facultyName,
                 major: majorName,
-                // ─── ค่าเริ่มต้น (อาจารย์จะมาอัปเดตภายหลัง) ───
-                improve_round: "",
-                year: "",
+                improve_round: body.improve_round || "",
+                year: body.year || "",
                 // ─── optional ───────────────────────────────────
                 reason: body.note || null,  // ใช้ note เป็น reason เบื้องต้น
                 file_path: filePath,
@@ -132,6 +156,8 @@ export const updateSmo08 = async ({ params, body, set }) => {
                 curriculum_id: Number(body.curriculum_id),
                 faculty: facultyName,
                 major: majorName,
+                improve_round: body.improve_round !== undefined ? body.improve_round : undefined,
+                year: body.year !== undefined ? body.year : undefined,
                 reason: body.note ?? undefined,
                 ...(filePath !== undefined && { file_path: filePath }),
             },

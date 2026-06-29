@@ -21,6 +21,14 @@ const ROLE_STYLES = {
     officer: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
 };
 
+const formatPhoneDisplay = (digits) => {
+    if (!digits) return "";
+    const clean = digits.replace(/\D/g, "");
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 6) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 6)}-${clean.slice(6, 10)}`;
+};
+
 export const Profile = () => {
     const { user: authUser, setUser } = useAuth();
     const [profile, setProfile] = useState(null);
@@ -55,6 +63,9 @@ export const Profile = () => {
     };
 
     const handleSaveProfile = async () => {
+        if (editForm.phone && !/^[0-9]{9,10}$/.test(editForm.phone)) {
+            return Swal.fire("ผิดพลาด", "เบอร์โทรศัพท์ต้องเป็นตัวเลข 9–10 หลัก", "error");
+        }
         try {
             const res = await api.put('/profile', editForm);
             setProfile(prev => ({ ...prev, ...res.data }));
@@ -69,8 +80,8 @@ export const Profile = () => {
     const handleChangePassword = async () => {
         if (pwForm.new_password !== pwForm.confirm_password)
             return Swal.fire("ผิดพลาด", "รหัสผ่านใหม่ไม่ตรงกัน", "error");
-        if (pwForm.new_password.length < 6)
-            return Swal.fire("ผิดพลาด", "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร", "error");
+        if (pwForm.new_password.length < 8)
+            return Swal.fire("ผิดพลาด", "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร", "error");
         try {
             await api.put('/profile/password', { current_password: pwForm.current_password, new_password: pwForm.new_password });
             setPwMode(false);
@@ -223,7 +234,15 @@ export const Profile = () => {
                                                         {options.map(o => <option key={o} value={o}>{o}</option>)}
                                                     </select>
                                                 ) : (
-                                                    <input type={type} value={editForm[field] || ""} onChange={e => setEditForm(p => ({ ...p, [field]: e.target.value }))}
+                                                    <input type={type}
+                                                        value={field === "phone" ? formatPhoneDisplay(editForm[field] || "") : (editForm[field] || "")}
+                                                        onChange={e => {
+                                                            let val = e.target.value;
+                                                            if (field === "phone") {
+                                                                val = val.replace(/\D/g, "").slice(0, 10);
+                                                            }
+                                                            setEditForm(p => ({ ...p, [field]: val }));
+                                                        }}
                                                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 focus:outline-none transition" />
                                                 )}
                                             </div>

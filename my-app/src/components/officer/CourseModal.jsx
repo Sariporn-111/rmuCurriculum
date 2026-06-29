@@ -39,6 +39,42 @@ const MEETING_RESULTS = [
     { value: "rejected", label: "ไม่ผ่าน", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
 ];
 
+export const formatThaiDateInput = (val) => {
+    const digits = val.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+};
+
+export const parseThaiDateToEngDate = (thaiDateStr) => {
+    if (!thaiDateStr) return null;
+    const parts = thaiDateStr.split("/");
+    if (parts.length === 3) {
+        const d = parts[0].trim();
+        const m = parts[1].trim();
+        const y = parts[2].trim();
+        if (d.length === 2 && m.length === 2 && y.length === 4) {
+            const engYear = Number(y) - 543;
+            return `${engYear}-${m}-${d}`;
+        }
+    }
+    return null;
+};
+
+export const parseEngDateToThaiDate = (engDateStr) => {
+    if (!engDateStr) return "";
+    const datePart = engDateStr.split("T")[0]; // "YYYY-MM-DD"
+    const parts = datePart.split("-");
+    if (parts.length === 3) {
+        const y = parts[0];
+        const m = parts[1];
+        const d = parts[2];
+        const thaiYear = Number(y) + 543;
+        return `${d}/${m}/${thaiYear}`;
+    }
+    return "";
+};
+
 // ════════════════════════════════════════════
 // EMPTY FORM
 // ════════════════════════════════════════════
@@ -92,9 +128,9 @@ export const buildEditForm = (course) => ({
     curriculum_year: course.curriculum_year ? String(course.curriculum_year) : "",
     revision_round: course.revision_round !== undefined ? String(course.revision_round) : "1",
     is_backfill: false,
-    effective_date: course.effective_date ? new Date(course.effective_date).toISOString().split("T")[0] : "",
+    effective_date: course.effective_date ? parseEngDateToThaiDate(course.effective_date) : "",
     end_year: course.end_year ? String(course.end_year) : "",
-    close_date: course.close_date ? new Date(course.close_date).toISOString().split("T")[0] : "",
+    close_date: course.close_date ? String(new Date(course.close_date).getFullYear() + 543) : "",
     program_flag: course.program_flag || "",
 });
 
@@ -593,7 +629,22 @@ const CourseModal = ({ open, isEdit, form, setForm, onClose, onSuccess, selected
 
     if (!open) return null;
 
-    const handleChange = (e) => { const { name, value } = e.target; setForm(prev => ({ ...prev, [name]: value })); };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        let val = value;
+        if (name === "effective_date") {
+            val = formatThaiDateInput(value);
+        }
+        setForm(prev => {
+            const nextForm = { ...prev, [name]: val };
+            if (name === "start_academic_year" && val && val.trim().length === 4 && !isNaN(val)) {
+                const startYr = Number(val.trim());
+                nextForm.end_year = String(startYr + 4);
+                nextForm.close_date = String(startYr + 8);
+            }
+            return nextForm;
+        });
+    };
     const handleFacultyChange = (e) => setForm(prev => ({ ...prev, faculty_id: e.target.value, department_id: "" }));
     const handleEducationLevelChange = (e) => setForm(prev => ({ ...prev, education_level: e.target.value, degree_type_id: "", degree_name_th: "", degree_name_en: "", degree_abbr_th: "", degree_abbr_en: "" }));
     const handleDegreeTypeChange = (e) => {
@@ -626,6 +677,13 @@ const CourseModal = ({ open, isEdit, form, setForm, onClose, onSuccess, selected
         if (!form.total_credits) { Swal.fire("แจ้งเตือน", "กรุณากรอกจำนวนหน่วยกิต", "warning"); return false; }
         if (showRevisionRound && !form.revision_round) { Swal.fire("แจ้งเตือน", "กรุณากรอกรอบปรับปรุง", "warning"); return false; }
         if (isRevised && !form.old_curriculum_name?.trim()) { Swal.fire("แจ้งเตือน", "กรุณากรอกชื่อหลักสูตรเดิม", "warning"); return false; }
+        if (form.effective_date) {
+            const parsed = parseThaiDateToEngDate(form.effective_date);
+            if (!parsed) {
+                Swal.fire("แจ้งเตือน", "กรุณากรอก วันที่สภามหาวิทยาลัยอนุมัติ ให้ถูกต้องครบถ้วนในรูปแบบ วว/ดด/ปปปป (เช่น 29/06/2569)", "warning");
+                return false;
+            }
+        }
         return true;
     };
 
@@ -662,9 +720,11 @@ const CourseModal = ({ open, isEdit, form, setForm, onClose, onSuccess, selected
                 education_level: form.education_level,
                 curriculum_year: Number(form.curriculum_year),
                 revision_round: (form.curriculum_status === "new" && !isBackfill) ? 0 : Number(form.revision_round),
-                effective_date: form.effective_date || null,
+                effective_date: parseThaiDateToEngDate(form.effective_date),
                 end_year: form.end_year ? Number(form.end_year) : null,
-                close_date: form.close_date || null,
+                close_date: (form.close_date && String(form.close_date).trim().length === 4)
+                    ? `${Number(String(form.close_date).trim()) - 543}-01-01`
+                    : (form.close_date || null),
                 program_flag: form.program_flag || null,
                 department_id: Number(form.department_id),
             };
@@ -986,13 +1046,13 @@ const CourseModal = ({ open, isEdit, form, setForm, onClose, onSuccess, selected
                                                     <option value="3">ภาคการศึกษาที่ 3 (ภาคฤดูร้อน)</option>
                                                 </SelectField>
                                             </Field>
-                                            <Field label="ปีการศึกษาที่"><input name="start_academic_year" value={form.start_academic_year || ""} onChange={handleChange} placeholder="2568" className={inputCls} /></Field>
+                                            <Field label="ปีการศึกษาที่เริ่มใช้"><input name="start_academic_year" value={form.start_academic_year || ""} onChange={handleChange} placeholder="2568" className={inputCls} /></Field>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
-                                        <Field label="วันที่สภามหาวิทยาลัยอนุมัติ"><input type="date" name="effective_date" value={form.effective_date} onChange={handleChange} className={inputCls} /></Field>
+                                        <Field label="วันที่สภามหาวิทยาลัยอนุมัติ"><input name="effective_date" value={form.effective_date || ""} onChange={handleChange} placeholder="วว/ดด/ปปปป" className={inputCls} /></Field>
                                         <Field label="ปีสิ้นสุดหลักสูตร (พ.ศ.)"><input name="end_year" value={form.end_year || ""} onChange={handleChange} placeholder="2572" className={inputCls} /></Field>
-                                        <Field label="วันที่ปิดหลักสูตร"><input type="date" name="close_date" value={form.close_date} onChange={handleChange} className={inputCls} /></Field>
+                                        <Field label="ปีที่ปิดหลักสูตร (พ.ศ.)"><input name="close_date" value={form.close_date || ""} onChange={handleChange} placeholder="2572" className={inputCls} /></Field>
                                     </div>
                                 </div>
                             </section>

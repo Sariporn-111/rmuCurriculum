@@ -47,6 +47,14 @@ const emptyEducation = (level) => ({
     graduation_year: "",
 })
 
+const formatPhoneDisplay = (digits) => {
+    if (!digits) return "";
+    const clean = digits.replace(/\D/g, "");
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 6) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 6)}-${clean.slice(6, 10)}`;
+};
+
 // form เริ่มต้นสำหรับอาจารย์ใหม่ (ผู้รับผิดชอบ — ครบ)
 const EMPTY_TEACHER_FULL = {
     employee_code: "", title_name: "", first_name_th: "", last_name_th: "",
@@ -172,8 +180,13 @@ export const CommitteeModal = ({
     const updateEducationField = (idx, field, value) =>
         setEducationForm(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item))
 
-    const setTf = (field, value) =>
-        setTeacherForm(prev => ({ ...prev, [field]: value }))
+    const setTf = (field, value) => {
+        let val = value;
+        if (field === "phone") {
+            val = value.replace(/\D/g, "").slice(0, 10);
+        }
+        setTeacherForm(prev => ({ ...prev, [field]: val }));
+    }
 
     // ── เปิดฟอร์มเพิ่มอาจารย์ใหม่ ────────────────────────────────────────────
     const openAddTeacher = (role = "member") => {
@@ -230,6 +243,9 @@ export const CommitteeModal = ({
         // validation พื้นฐาน
         if (!teacherForm.first_name_th || !teacherForm.last_name_th || !teacherForm.employee_code)
             return Swal.fire("ผิดพลาด", "กรุณากรอกข้อมูลที่จำเป็น (รหัสพนักงาน / ชื่อ / นามสกุล)", "error")
+
+        if (teacherForm.phone && !/^[0-9]{9,10}$/.test(teacherForm.phone))
+            return Swal.fire("ผิดพลาด", "เบอร์โทรศัพท์ต้องเป็นตัวเลข 9–10 หลัก", "error")
 
         // ถ้าเป็นผู้รับผิดชอบ ต้องมีชื่อมหาวิทยาลัยของระดับที่กรอกอย่างน้อย 1 ระดับ
         if (newTeacherRole === "responsible") {
@@ -349,7 +365,7 @@ export const CommitteeModal = ({
                                     placeholder="email@rmu.ac.th" />
 
                                 <TextInput label="เบอร์โทร"
-                                    value={teacherForm.phone}
+                                    value={formatPhoneDisplay(teacherForm.phone || "")}
                                     onChange={v => setTf("phone", v)}
                                     placeholder="0XX-XXX-XXXX" />
                             </div>

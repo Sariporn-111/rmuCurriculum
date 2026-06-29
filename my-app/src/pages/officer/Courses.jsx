@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "../../components/MainLayout";
-import CourseModal from "../../components/officer/CourseModal";
+import CourseModal, { parseEngDateToThaiDate } from "../../components/officer/CourseModal";
 import CourseDetailModal from "../../components/officer/CourseDetailModal";
 import Pagination from "../../components/ui/Pagination";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -112,8 +112,8 @@ const Courses = () => {
             curriculum_year: String(course.curriculum_year || ""),
             revision_round: String(course.revision_round || "1"),
 
-            effective_date: course.effective_date?.split("T")[0] || "",
-            close_date: course.close_date?.split("T")[0] || "",
+            effective_date: parseEngDateToThaiDate(course.effective_date),
+            close_date: course.close_date ? String(new Date(course.close_date).getFullYear() + 543) : "",
 
             curriculum_format: course.curriculum_format || "",
             curriculum_format_other: course.curriculum_format_other || "",
@@ -199,7 +199,8 @@ const Courses = () => {
             course.curriculum_name_th?.toLowerCase().includes(keyword) ||
             course.curriculum_code?.toLowerCase().includes(keyword);
         const matchLevel = !levelFilter || course.education_level === levelFilter;
-        const matchType = !typeFilter || course.program_type === typeFilter;
+
+        const matchType = !typeFilter || course.curriculum_status === typeFilter;
         return matchSearch && matchLevel && matchType;
     });
 
@@ -263,7 +264,7 @@ const Courses = () => {
                         <div className="relative">
                             <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
                                 className="appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-7 text-sm text-gray-600 outline-none focus:border-blue-400">
-                                <option value="">ประเภท — ทั้งหมด</option>
+                                <option value="">ทั้งหมด</option>
                                 <option value="new">หลักสูตรใหม่</option>
                                 <option value="revised">หลักสูตรปรับปรุง</option>
                             </select>

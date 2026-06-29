@@ -13,6 +13,7 @@ import {
     GitCompare,
     X,
     ChevronDown,
+    Copy,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -70,15 +71,9 @@ const CompareModal = ({
 
     if (!open) return null;
 
-    const filtered = data.filter((item) => {
-        const name = item.tb_curriculum?.curriculum_name_th?.toLowerCase() ?? "";
-        const faculty = item.tb_curriculum?.departments?.faculties?.faculty_name_th?.toLowerCase() ?? "";
-
-        const matchSearch = !search || name.includes(search.toLowerCase());
-        const matchFaculty = !facultyFilter || faculty.includes(facultyFilter.toLowerCase());
-
-        return matchSearch && matchFaculty;
-    });
+    const filteredRounds = data.filter(
+        (item) => String(item.curriculum_id) === String(selectedCurriculumId)
+    );
 
     const itemA = filteredRounds.find(
         (item) =>
@@ -397,19 +392,27 @@ const Revise = () => {
     );
 
 
-    const handleSave = async (form) => {
+    const handleSave = async (form, options = {}) => {
         try {
             const formData = new FormData();
             formData.append("curriculum_id", form.curriculum_id);
+            if (options.isNewRound) {
+                const nextRound = Number(editData.improve_round || 0) + 1;
+                formData.append("improve_round", String(nextRound));
+                formData.append("year", form.year);
+            } else {
+                if (form.improve_round) formData.append("improve_round", form.improve_round);
+                if (form.year) formData.append("year", form.year);
+            }
             if (form.note) formData.append("note", form.note);
             if (form.file instanceof File) formData.append("file", form.file);
 
-            if (editData) {
+            if (editData && !options.isNewRound) {
                 await api.put(`/smo08/${editData.smo08_id}`, formData);
                 Swal.fire("สำเร็จ", "แก้ไขข้อมูลแล้ว", "success");
             } else {
                 await api.post("/smo08", formData);
-                Swal.fire("สำเร็จ", "เพิ่มข้อมูลแล้ว", "success");
+                Swal.fire("สำเร็จ", "เพิ่มข้อมูลรอบใหม่เรียบร้อยแล้ว", "success");
             }
             fetchData();
             setOpenModal(false);
@@ -737,7 +740,6 @@ const Revise = () => {
                                                                 </a>
 
                                                                 <a
-
                                                                     href={`${import.meta.env.VITE_API_URL}${item.file_path}`}
                                                                     download
                                                                     className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"

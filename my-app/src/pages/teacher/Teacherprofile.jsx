@@ -24,6 +24,14 @@ const emptyEducation = (level) => ({
     graduation_year: "",
 });
 
+const formatPhoneDisplay = (digits) => {
+    if (!digits) return "";
+    const clean = digits.replace(/\D/g, "");
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 6) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 6)}-${clean.slice(6, 10)}`;
+};
+
 export const TeacherProfile = () => {
     const [teacher, setTeacher] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -120,8 +128,10 @@ export const TeacherProfile = () => {
         }
     };
 
-    // ✅ บันทึกข้อมูลส่วนตัว — ส่งเฉพาะ personalForm
     const handleSavePersonal = async () => {
+        if (personalForm.phone && !/^[0-9]{9,10}$/.test(personalForm.phone)) {
+            Swal.fire("แจ้งเตือน", "เบอร์โทรศัพท์ต้องเป็นตัวเลข 9–10 หลัก", "warning"); return;
+        }
         try {
             setSaving(true);
             await api.put("/teachers/me", personalForm);
@@ -175,8 +185,8 @@ export const TeacherProfile = () => {
     };
 
     const handleChangePassword = async () => {
-        if (passwordForm.new_password.length < 6) {
-            Swal.fire("แจ้งเตือน", "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร", "warning"); return;
+        if (passwordForm.new_password.length < 8) {
+            Swal.fire("แจ้งเตือน", "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร", "warning"); return;
         }
         if (passwordForm.new_password !== passwordForm.confirm_password) {
             Swal.fire("แจ้งเตือน", "รหัสผ่านใหม่ไม่ตรงกัน", "warning"); return;
@@ -369,7 +379,10 @@ export const TeacherProfile = () => {
                                             </div>
                                             <div>
                                                 <label className={labelClass}>เบอร์โทรศัพท์</label>
-                                                <input value={personalForm.phone} onChange={e => setPersonalForm(p => ({ ...p, phone: e.target.value }))} placeholder="0XX-XXX-XXXX" className={inputClass} />
+                                                <input value={formatPhoneDisplay(personalForm.phone || "")} onChange={e => {
+                                                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                                    setPersonalForm(p => ({ ...p, phone: digits }));
+                                                }} placeholder="0XX-XXX-XXXX" className={inputClass} />
                                             </div>
                                             <div>
                                                 <label className={labelClass}>อีเมล</label>

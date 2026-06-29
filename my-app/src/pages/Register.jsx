@@ -58,7 +58,7 @@ export const Register = () => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("รูปแบบอีเมลไม่ถูกต้อง");
         if (!form.username.trim()) return setError("กรุณากรอกชื่อผู้ใช้");
         if (form.username.length < 4) return setError("ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร");
-        if (form.password.length < 6) return setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+        if (form.password.length < 8) return setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
         if (form.password !== form.confirm_password) return setError("รหัสผ่านไม่ตรงกัน");
 
         try {

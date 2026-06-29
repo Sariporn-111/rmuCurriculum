@@ -250,6 +250,9 @@ model curriculum_certification {
 
   request_date DateTime? @db.Date // เก็บไว้เผื่อใช้
   approve_date DateTime? @db.Date // เก็บไว้เผื่อใช้
+  recipient    String?   @db.VarChar(255) // ✅ ส่งถึงใคร เช่น มหาวิทยาลัยราชภัฏมหาสารคาม
+
+  received_time String? @db.VarChar(10) // ✅ เวลาที่รับ เช่น "13:06"
 
   file_path  String?             @db.VarChar(255)
   note       String?

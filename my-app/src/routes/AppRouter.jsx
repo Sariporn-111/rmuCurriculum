@@ -115,7 +115,14 @@ export const AppRouter = () => (
       />
 
       {/* Shared */}
-      <Route path="/profile" element={<Profile />} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Officer */}
       <Route
